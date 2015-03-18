@@ -69,9 +69,24 @@ get "/list" do
   erb :list
 end
 
-get "/ad" do
+get "/delete/:id" do
+  ad = Ad.get(params[:id])
+  unless ad.nil?
+    path = File.join(Dir.pwd,"/public/ads",ad.filename)
+    begin
+      File.delete(path)
+      puts "ad deleted at "+path
+    rescue
+      puts "file at "+path+" not found"
+    ensure
+      ad.destroy
+      puts "record deleted "+ad.to_s
+    end
+  end
+  redirect('/list')
 end
-get "delete/:id" do
+
+get "/ad" do
 end
 get "click/:id" do
 end
