@@ -36,6 +36,7 @@ get "/new" do
 end
 
 post "/create" do
+  @page_title = "create new ad"
   ad = Ad.new(params[:ad])
   ad.content_type = params[:image][:type]
   ad.size = File.size(params[:image][:tempfile])
@@ -52,12 +53,23 @@ post "/create" do
   end
 end
 
-get "show/:id" do
+get "/show/:id" do
+  @page_title = "show Ad"
+  @ad = Ad.get(params[:id])
+  if @ad
+    erb :show
+  else
+    redirect('/list')
+  end
+end
+
+get "/list" do
+  @page_title = "List Ads"
+  @ads = Ad.all(:order=>[:created_at.desc])
+  erb :list
 end
 
 get "/ad" do
-end
-get "/list" do
 end
 get "delete/:id" do
 end
