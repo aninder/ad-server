@@ -6,7 +6,6 @@ require 'dm-migrations'
 DataMapper::setup(:default,"sqlite3://#{Dir.pwd}/db/adserver.db")
 
 class Ad
-
   include DataMapper::Resource
 
   property :id,           Serial
@@ -21,6 +20,18 @@ class Ad
   property :updated_at,   DateTime
   property :size,         Integer
   property :content_type, String
+
+  has n, :clicks
+end
+
+class Click
+  include DataMapper::Resource
+
+  property :id, Serial
+  property :ip_address, String
+  property :created_at, DateTime
+
+  belongs_to :ad
 end
 
 DataMapper::Model.raise_on_save_failure = true
@@ -87,7 +98,16 @@ get "/delete/:id" do
 end
 
 get "/ad" do
+  id = repository(:default).adapter.query(
+    'select id from ads order by random() limit 1;'
+  )
+  @ad = Ad.get(id)
+  erb :ad , :layout => false
 end
-get "click/:id" do
+
+get "/click/:id" do
+  ad = Ad.get(params[:id])
+  ad.clicks.create(:ip_address=>env["REMOTE_ADDR"])
+  redirect(ad.url)
 end
 
