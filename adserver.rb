@@ -2,8 +2,16 @@ require 'sinatra'
 require 'dm-core'
 require 'dm-timestamps'
 require 'dm-migrations'
+require_relative 'lib/authorization'
 
 DataMapper::setup(:default,"sqlite3://#{Dir.pwd}/db/adserver.db")
+DataMapper::Model.raise_on_save_failure = true
+DataMapper.auto_upgrade!
+
+# helpers keep the namespace clean
+helpers do
+  include Sinatra::Authorization
+end
 
 class Ad
   include DataMapper::Resource
@@ -34,19 +42,19 @@ class Click
   belongs_to :ad
 end
 
-DataMapper::Model.raise_on_save_failure = true
-DataMapper.auto_upgrade!
-
 get "/" do
   @page_title="default page"
   erb :landing_page
 end
+
 get "/new" do
+  require_admin
   @page_title="Create a New Ad"
   erb :new
 end
 
 post "/create" do
+  require_admin
   @page_title = "create new ad"
   ad = Ad.new(params[:ad])
   ad.content_type = params[:image][:type]
@@ -65,6 +73,7 @@ post "/create" do
 end
 
 get "/show/:id" do
+  require_admin
   @page_title = "show Ad"
   @ad = Ad.get(params[:id])
   if @ad
@@ -75,12 +84,14 @@ get "/show/:id" do
 end
 
 get "/list" do
+  require_admin
   @page_title = "List Ads"
   @ads = Ad.all(:order=>[:created_at.desc])
   erb :list
 end
 
 get "/delete/:id" do
+  require_admin
   ad = Ad.get(params[:id])
   unless ad.nil?
     path = File.join(Dir.pwd,"/public/ads",ad.filename)
@@ -110,4 +121,3 @@ get "/click/:id" do
   ad.clicks.create(:ip_address=>env["REMOTE_ADDR"])
   redirect(ad.url)
 end
-
